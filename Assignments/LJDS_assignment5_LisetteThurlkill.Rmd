@@ -1,0 +1,196 @@
+---
+title: "Assignment 5"
+output:
+  pdf_document: default
+  html_document: default
+date: '2022-03-01'
+---
+
+# Part I: Predicting the future - visually exploring the data set
+---
+
+Predicting the future is a powerful skill to have - it has just as much potential to help people, as it does to cause harm through misuse. As Spiderman's Uncle Ben puts it: "With great power comes great responsibility." We'll cover more about bias in predictions as we go forward, but for now the goal is to get you familiar with making predictions using data and R.
+
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+library(randomForest)
+```
+
+```{r}
+# Read in the CSV file
+setwd("C:/Users/lgptp/Documents/LJDS/Assignments")
+guns = read.csv("guns.csv")
+# Inspect the first few rows to get a sense of the structure
+head(guns)
+```
+
+ **Make a plot below, using `ggplot`.** 
+
+```{r}
+# Plot of gun deaths by sex and age
+ggplot(guns, aes(x = sex, y = age)) +
+        geom_violin() +
+  geom_jitter(alpha = 0.05, size = 1, stroke = 0, size = 16)  
+```
+```{r}
+ggplot(guns, aes(x = sex, y = age)) +
+geom_jitter(alpha = 0.05, size = 1, stroke = 0)  
+
+```
+
+**Describe any differences you see between males and females in terms of the ages of gun victims.**
+Between Males and Females, there is an obvious difference in gun deaths. From the plots, males are killed by guns a lot more than females. There are some similarities in that around 15 and then around 50 there's another spike-esque in number of gun deaths. 
+
+**Make another plot below, using the same `ggplot()` code you wrote above, but substitute the variable `intent` for `sex` on the x-axis.**
+
+```{r}
+# Plot of gun deaths by intent and age
+ggplot(guns, aes(x = intent, y = age)) +
+geom_jitter(alpha = 0.05, size = 1, stroke = 0) 
+```
+
+**Describe any differences you see in the intents of gun deaths, and how the age of victims varies by intent.** 
+First observation is that there are very few accidental deaths and those are spread out pretty evenly throughout age. Similar to undetermined. Then we look at homicide and the majority of those deaths are concentrated around 15-30, with a gradual tapering as the victims get older. There is a distinct difference between homicide and suicide, where the deaths are spread out pretty evenly from 15-90. There is, however, a slight increase between the ages of 45-60 in gun deaths by suicide.
+
+**observing the difficulty in visualizing two categorical axes**
+
+How do the types of `intent` vary by race? Well, this is *slightly* trickier to plot because `race` is categorical. So, plotting points or shapes results in a lot of overlap, making it impossible to make sense of. We can try to get away with this by jittering and transparency, but even that doesn't help much. Run the chunk below to see what I mean:
+
+```{r}
+# Run this to see the difficulty in visualizing two categorical axes
+ggplot(guns) +
+  aes(x = intent, y = race) +
+  geom_jitter(alpha = 0.05)
+```
+ **Make a `ggplot()` below, showing the percentages in the dataset of `intent` by `race`. In your `aes()` call, include an argument `fill = Freq`** (if you didn't rename the columns) **, and for the geom, use a `geom_tile()`.** 
+
+```{r}
+# First create a data frame containing the frequency of intent by race
+gir <- table(guns$intent,guns$race)
+gunspercent <- gir/nrow(gir)*100 
+df = data.frame(gunspercent)
+# Plot it as a heatmap
+library(scales)
+ggplot(df, aes(x = Var1, y = Var2, fill = Freq)) + 
+          geom_tile() +
+  scale_fill_distiller(palette = 'Blues')
+
+```
+
+**Briefly describe what the heatmap tells you about the intents of gun deaths and their relation to race.**
+White: accidental deaths make up the least gun deaths, followed by homicide, and with the most suicidal deaths. Native American/Native Alaskan: there is no different in frequency between intents of gun deaths- they are all approximately as uncommon. Hispanic: Accidental deaths are most uncommon, with suicide second, and homicide most common; the frequencies of gun deaths along all intents is still low. Black: Accidental deaths are also least common, with suicide being about the same as hispanic- slightly more frquent; Homicide intent deaths are most frequent. 
+
+**do you think that, if we were given some new data, such as `age`, `sex`, or `race`, we could predict what the `intent` of the gun death was - if we didn't know in advance? Why or why not?**
+
+
+# Part II: Predicting the future - training a predictive model
+---
+
+```{r}
+# Remove rows that contain NA in any column
+guns = guns[complete.cases(guns),]
+
+# Remove rows where the $intent variable is 'Undetermined' (try using !=)
+guns = guns[guns$intent != 'Undetermined',]
+
+# Remove the first column - it is just a row identifier and is non-informative
+guns$X = NULL
+
+
+# Explicitly convert categorical columns to "factors"
+# R treats "factors" more nicely than "character" variables
+guns$intent = as.factor(guns$intent)
+guns$police = as.factor(guns$police)
+guns$sex = as.factor(guns$sex)
+guns$race = as.factor(guns$race)
+guns$place = as.factor(guns$place)
+guns$education = as.factor(guns$education)
+
+```
+
+**let's take a look at a single decision tree applied to this data set.**
+
+```{r}
+library(tree)
+tr = tree(intent ~ ., data = guns, mindev = 0.005)
+plot(tr, type = 'uniform')
+text(tr, pretty = 0)
+```
+
+ **What variable is involved in the first decision - at the tree's root? Looking at the bottom of the tree (the "terminal nodes", or "leaf nodes"), does it make sense that this is the first decision made? Why or why not?**. 
+The first variable at the tree's root is race. The terminal nodes describe intent. Yes, the first decision makes sense since it allows the readers to see what variables could predict or signify intent. It is also good if you want to look at race-related concerns/policy. It would not be if you wanted to look at other variabels as your primary. 
+ 
+ **Change the plot type to 'proportional' above and re-run the code chunk. Which decision carries the most weight?**
+ the decision that carries the most weight is race. 
+ 
+```{r}
+tr = tree(intent ~ ., data = guns, mindev = 0.005)
+plot(tr, type = 'proportional')
+text(tr, pretty = 0)
+```
+
+```{r}
+rf = randomForest(intent ~ ., data = guns)
+rf
+```
+
+**What was the greatest source of confusion for the model, and how can you tell?**
+the greatest source of confusion is the accidental model and you can tell by the class error.
+
+**Run the function varImpPlot(), passing in your random forest model as the only argument, and describe what the plot tells you.** 
+The plot tells us that race, age, and place are variables of importance (probably best for predictions).
+
+```{r}
+varImpPlot(rf)
+```
+
+**Below, make a subset of the `guns` data frame, keeping only the columns that were most important above (the decision of "most" important is up to you). Train a new random forest on this subset, and `print()` the model or type its name to inspect the error summary.**
+
+```{r}
+smolguns <- subset(guns, select = c(race, age, place, education, intent))
+rf = randomForest(intent ~ ., data = smolguns)
+rf
+```
+
+**How does the overall OOB error rate compare in this model to the original? How about the confusion matrix? Does the model do better or worse for some of the classes?**
+the overall OOB error rate did worse than the original, same with the confusion matrix, and all of the classes.
+
+**1. Split the data into training and testing sets.** 
+**2. Train a new random forest with the same parameters as your models above (so we can compare them). Print out the model summary to check if your error rate is similar to the above.**
+
+```{r}
+# Randomly sample rows to get training and testing data frames
+tguns = sample(c(TRUE, FALSE), nrow(guns), replace = TRUE, prob = c(0.7, 0.3))
+sum(tguns)
+train = guns[tguns,]
+test = guns[!tguns,]
+
+
+# Use the training data to train a new random forest model
+rf = randomForest(intent ~ ., data = guns)
+rf
+plot(rf)
+```
+
+**use the `predict()` function to make predictions on the test data. Compute how many are correct out of the total to get your overall error rate.**
+I probably did something wrong to get this number...
+``` {r}
+preds = predict(rf, test)
+head(preds)
+# Get an error rate for the predictions
+1 - (sum(test[,'intent'] == preds) / length(preds) * 100)
+```
+
+## Part IV: Your feedback
+
+**On a scale of 1-5, with 1 being “too easy”, 5 being “too hard”, and 3 being “a good level”, how difficult was this assignment?**
+3, I liked this assignment.
+
+**Approximately how much time did you spend working on this assignment? (i.e. actively solving the problem, not exploring the data independently)**
+2 hours
+
+**Any thoughts on what you found useful, or what you found mundane, or confusing? (anything, big or small)**

@@ -1,0 +1,256 @@
+---
+title: "Assignment 4"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Part 1: Getting to know ggplot
+
+ggplot is an incredibly powerful and popular graphing toolbox for R. We'll use it throughout the semester, and if you continue working with data in R, it will be an invaluable tool for you. ggplot's syntax (the way it is typed) can seem strange at first, and there is definitely a learning curve. Let's start by getting comfortable with some of the basics. Because ggplot allows flexibility in how its commands are expressed, there are a variety of coding "styles" we could adopt. If you are already comfortable with ggplot, you may write your code however you like. Take my suggestions in the assignment as one "style" that I find works for me.
+
+We'll work with the NYC arrests dataset. Download and extract the `arrests.csv` file from Courseworks. The dataset contains rows that are NYPD arrests from Jan 2020 through Jan 2021. Read the dataset into R using `read.csv()` (NOTE: Don't use `readr` functions such as `read_csv()` for this, as some of the later steps may not make sense). Also, the beginning of a script is a good place to load libraries/packages you'll use. If you don't have `ggplot2` installed yet, do so by running `install.packages('ggplot2')`.
+
+```{r, echo=FALSE}
+library(ggplot2)
+setwd("~/LJDS/Assignments")
+arrests = read.csv('arrests.csv')
+```
+
+**use ggplot to make a histogram of precincts where arrests are made (`ARREST_PRECINCT`).** 
+
+```{r}
+ggplot(arrests, aes(x = ARREST_PRECINCT)) +
+   labs(x = 'Arrest Precinct',
+       y = 'Number of Arrests',
+       title = 'Arrest Precinct') +
+  geom_histogram()
+```
+
+**does it appear that some precincts have higher arrest rates than others?**
+In this plot, it does seem like some precincts have higher, or rather much higher arrest rates than others. For some, almost double the average.
+
+**make a box plot showing arrest precincts by race by linking `PERP_RACE` to the x-axis and `ARREST_PRECINCT` to the y-axis in `aes()`.**
+
+```{r}
+ggplot(arrests, aes(x = PERP_RACE, y = ARREST_PRECINCT)) +
+  geom_boxplot()
+```
+
+**copy+paste your code above, but substitute `geom_boxplot()` with `geom_point()`.** **Copy+paste again, and substitute `geom_point()` with `geom_jitter()`.** **One more time, copy+paste again and substitute `geom_jitter() for geom_violin()`.** 
+
+```{r}
+# Use geom_point() here
+
+ggplot(arrests, aes(x = PERP_RACE, y = ARREST_PRECINCT)) +
+  geom_point()
+
+
+# Use geom_jitter() here
+
+ggplot(arrests, aes(x = PERP_RACE, y = ARREST_PRECINCT)) +
+  geom_jitter()
+
+
+# Use geom_violin() here
+
+ggplot(arrests, aes(x = PERP_RACE, y = ARREST_PRECINCT)) +
+  geom_violin()
+
+
+```
+
+**Below, copy+paste the boxplot you made above, but link the `PERP_SEX` variable to an additional aesthetic.** 
+
+```{r}
+ggplot(arrests, aes(x = PERP_RACE, y = ARREST_PRECINCT, fill = PERP_SEX)) +
+  geom_boxplot()
+#I liked the fill option more
+```
+
+**How are `color` and `fill` different?** Color differentiates the outline versus fill involves filling the space/box.
+
+ **Assign the plot to an object called `plt` or `p` or some short name.** 
+```{r}
+p = ggplot(arrests, aes(x = PERP_RACE, y = ARREST_PRECINCT, fill = PERP_SEX))+
+  geom_boxplot() # your plotting code here
+p    # View the plot
+```
+
+ **run the code chunk below, and study the structure of the `theme()` line for a moment.**
+
+```{r}
+# Reassign the plot to itself, to store the changes we're about to make
+p = p +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# Now view the plot again
+p
+```
+
+**What changed in the plot?** By changing the angle, you change the angle at which the x-axis labels are shown. For example, changing it to 180 makes it turn upside down, and 45 gives it a nice angled look. The hjust tells the plot how far away to place the labels, so a larger number equivocates to a larger distance, while closer to 0 means the labels will be basically on top of the plot. 
+
+**Complete the `theme()` call by giving an `element_line()` to both `axis.line.x` and `axis.line.y`.** You can run `?theme` in the console to see the theme properties you have control over, and, for example `?element_line` to see what element properties you can customize. The possibilities are endless!
+
+```{r}
+p = p +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+        panel.background = element_rect(fill = "thistle2",
+                                colour = "thistle2",
+                                size = 0.5, linetype = "dotted"),
+  panel.grid.major = element_line(size = 0.5, linetype = 'dotted',
+                                colour = "white"), 
+  panel.grid.minor = element_line(size = 0.25, linetype = 'dotted',
+                                colour = "white"))
+p
+```
+
+ggplot has many pre-built custom themes as well, which you can quickly add with, for example, `theme_bw()`, or `theme_classic()`. Look online for a full list. But if you learn how to work with `theme` properties, you will have complete control of how your plot looks! Trust me, it's worth the investment.
+
+Anyway, this plot desperately needs clearer axis labels and a title! It couldn't be easier with `xlab()`, `ylab()`, and `title()`. Or, we could do it all at once with `labs()`, passing in arguments `x = '...'`, `y = '...'`, `title = '...'`. **Below, fix up the axis labels and add a title with either `labs()` or the more specific labeling functions `xlab()` etc.**
+
+```{r}
+
+p = p +
+labs(title = "Number of Arrests by Precinct, Race", 
+     subtitle = "Distinguished by female and male offenders", x = "Offender Race", 
+     y = "Princinct of Arrest")
+p
+
+```
+
+**You can pass `fill = ` and `color = ` into some geom's - outside of `aes()` - to give them static colors. See how/if your plot changes when you run the chunk below. (If you are already using fill/color in `aes()` this may not look great)** 
+
+```{r}
+p +
+  geom_boxplot(fill = 'grey')
+p
+```
+
+**In lab, I discussed Edward Tufte's concept of "small multiples". This is one way of visualizing data with more than two dimensions by creating mini-plots that vary along some grouping variable. ggplot has a function `facet_wrap` that makes plotting "small multiples" very easy. In the code chunk below, I plot the total number of arrests across time (2020-2021), grouped by NYC borough. **
+**Study the code below before you run it, then run and see the resulting plot.The key line here is `facet_wrap(~ Borough)`. I've done a little wrangling to format dates and get counts of total arrests in each borough at each time point, but `facet_wrap()` does all the hard work of creating the visualization. You will likely hear of these types of plots as "panel plots".**
+
+```{r}
+# WRANGLING
+# ---------
+# The arrest date is a chr variable, convert it to a datetime that ggplot can work with
+arrests$ARREST_DATE = as.Date(arrests$ARREST_DATE, format = '%m/%d/%y')
+
+# Use table() to get counts of rows by date and borough
+# Convert the table() output to a dataframe - by default the col names are Var1, Var2 etc
+totals = data.frame(table(arrests$ARREST_DATE, arrests$ARREST_BORO))
+
+# Rename the columns for convenience
+colnames(totals)[1] = 'Date'
+colnames(totals)[2] = 'Borough'
+colnames(totals)[3] = 'Count'
+
+# The table() converts the date back to a chr, so turn it back into a datetime type here
+totals$Date = as.Date(totals$Date)
+# --------- end WRANGLING
+
+# PLOTTING
+# ---------
+ggplot(totals) +
+  aes(x = Date, y = Count) +
+  geom_line() +
+  facet_wrap(~ Borough) # Here's the key line that makes "small multiples"
+
+```
+
+**Were there changes in arrests made throughout 2020? Are any boroughs more or less likely to have arrests than others?** 
+There were some changes in arrests throughout 2020, although there seems to be consistency in terms of general arrest numbers (solely looking at how the arrests dip and grow on the plots). However, there seem to be more consistently high arrests throughout Manhattan compared to other boroughs, such as Brooklyn or Queens, which seem to see more jumps and dips. The Bronx (I'm assuming) has more variety in arrests but still follows a general consistency. Brooklyn is most interesting with a couple huge spikes and then dips. Other than Staten Island, the other four boroughs see a spike around the holidays (October-December), which make sense as there is more revelry so more small offenses, as well as the "crime month" of December. The most interesting borough is Staten Island, which has the "lowest" number of arrests. However, the population number difference must be taken into account when viewing these plots, since comparatively, SI has a much lower population compared to the other four.
+
+## Part 2: Visualizing spatial data
+
+[Stamen Maps](http://maps.stamen.com/) is an easy-to-access resource for map data that pairs nicely with the `ggmap` library for R. It doesn't require any login authentication. `ggmap` was developed by the ggplot team, so the resulting maps are ggplot objects that can be manipulated using all the typical ggplot functions.
+
+The key differences are: we use `ggmap()` to iniate the plot, and instead of a dataframe as a first argument, we pass in a map. With Stamen Maps, this comes from the `get_stamenmap()` function. We'll then link our actual dataframe of interest to the map using `aes()` in a separate command.
+
+First, install `ggmap` if you haven't already, and tell R you want to use it with `library()`
+
+```{r}
+# install.packages('ggmap') # uncomment to install - you only need to do this once!
+library(ggmap)
+```
+
+**Play around with different arguments to `maptype = ` and find one you like - I am a fan of `toner-lite`.**
+
+```{r}
+ggmap(get_stamenmap(maptype = 'terrain'))
+#I liked the terrain map more than the others
+```
+
+These map data sources (including Stamen Maps) essentially grant you access to a map of the entire world. So, we ought to consider limiting our visualization range to that of the data. `get_stamenmap()` includes an argument for a "bounding box". Think of this as defining a window into the geographic area we want to look at. For example, in the plot above, the bounding box ranges from -95.8 to about -94.9 in longitude, and 29.4 to about 30.1 in latitude.
+
+We could find a bounding box for our region manually, but perhaps a better way is to let the data inform us. Using `max()` and `min()`, complete the bounding box code below to determine the range of geographical coordinates we should draw for the NYPD `arrests` dataset.
+
+```{r}
+# Make sure each line except the last one ends with a comma,
+bbox = c(bottom = 40.49, top = 40.91, left = -74.25, right = -73.6)
+bbox
+
+```
+
+Now you can pass in `bbox` as the first argument to `get_stamenmap()` and it will return a map bounded by those coordinates. There is also a `zoom = ` argument that defines the resolution of the map. Run `ggmap(get_stamenmap())` giving arguments `bbox` and a `zoom` of 11, with a `maptype` of 'terrain-lines'. Assign the output to a variable called `map`.
+
+While you're at it, get rid of the ugly background grid by setting the `panel.background` to a blank element with `element_blank()` using `theme()`. The latitude/longitude exact degrees are not adding to the viewer's understanding either, so get rid of them, too, in the same call to `theme` by setting `axis.ticks`, `axis.text`, and `axis.title` to `element_blank()`.
+
+```{r}
+# Complete the code here
+map = ggmap(get_stamenmap(bbox, zoom = 11, maptype = 'terrain-lines')) +
+  theme( panel.background = element_blank())
+
+map
+```
+
+There is a type of geom called `geom_density_2d_filled()` that is useful for visualizing spatial data. Run and study the code below to see how to add this type of geom to your map. Notice that we're giving a dataframe as well as an `aes()` mapping to the geom specifically. The argument `alpha =` controls the transparency of the geom and ranges from 0 (fully transparent) to 1 (fully opaque). We're also using logical indexing to extract the rows of `arrests` that only contain offenses (`OFNS_DESC`) related to dangerous weapons.
+
+```{r}
+map +
+  geom_density_2d_filled(data = arrests[arrests$OFNS_DESC == 'DANGEROUS WEAPONS',],
+               aes(x = Longitude, y = Latitude),
+               alpha = 0.4) +
+  labs(title = "Heat Map (Dangerous Weapons)",)
+```
+
+**Do you see any "hotspots" where arrests are likely to be made for dangerous weapons?**
+There are two major hotspots withint the 5 boroughs of new york. The largest is in the lower bronx into east harlem, and the other is in Queens/upper brooklyn (I'm still not very good at NYC geography). There are smaller hotspots around downtown manhattan as well as around upper Queens. 
+
+**Run the unique() function below, passing in the `OFNS_DESC` column using the `$` operator.**
+
+```{r}
+unique(arrests$OFNS_DESC)
+```
+
+**Copy+paste the code chunk above containing `geom_density_2d_filled`, and change the 'DANGEROUS WEAPONS' condition to a different type of offense.** 
+**Describe the resulting map - is it similar or different?**
+I decided to look at both Robbery and Rape, since I thought those two might have some connection to dangerous weapons. The map with showing rape offenses does somewhat follow that of the dangerous weapons map, however, the heat spots seem to be much more smaller and much more concentrated. The Robbery map is different from both, focusing on downtown manhattan and the Bronx. There does not seem to be so many of these kinds of offenses in Brooklyn or Queens.
+
+```{r}
+map +
+  geom_density_2d_filled(data = arrests[arrests$OFNS_DESC == 'RAPE',],
+               aes(x = Longitude, y = Latitude),
+               alpha = 0.4) +
+  labs(title = "Heat Map (Rape)",)
+```
+
+```{r}
+map +
+  geom_density_2d_filled(data = arrests[arrests$OFNS_DESC == 'ROBBERY',],
+               aes(x = Longitude, y = Latitude),
+               alpha = 0.4) +
+  labs(title = "Heat Map (Robbery)",)
+```
+
+I know this was a longer assignment - visualizing data is a huge topic and learning ggplot is no walk in the park! Congrats on getting this far and I hope this can serve as a valuable resource for you going forward.
+
+
+## Part 4: Your feedback
+
+**On a scale of 1-5, with 1 being “too easy”, 5 being “too hard”, and 3 being “a good level”, how difficult was this assignment?**
+3
+
+**Approximately how much time did you spend working on this assignment? (i.e. actively solving the problem, not exploring the data independently)**
+2
+
+**Any thoughts on what you found useful, or what you found mundane, or confusing? (anything, big or small)**

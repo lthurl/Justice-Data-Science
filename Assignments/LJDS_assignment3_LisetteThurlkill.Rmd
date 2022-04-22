@@ -1,0 +1,127 @@
+---
+title: "Assignment 3"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Part 1: Practice with logical indexing
+
+One of the most essential skills for data wrangling is indexing. With indexing, we select specific rows and columns from the data frame in order to do a variety of tasks - such as removing rows with missing values, taking averages based on a grouping column, or detecting outliers and annotating them in a visualization. Indexing is essentially THE tool we have for getting refined access to our data.
+
+Indexing with base R takes some getting used to. But, it is endlessly flexible, and translates almost 1:1 with other languages such as Python or MATLAB. It will also help you understand what `tidyverse` functions are doing when you use them to subset/filter your datasets. So, **for this part of the assignment, use indexing with square brackets `[]` and do not use tidyverse functions such as `filter()`. After this assignment, you can use whatever method you like.**
+
+Let's practice logical indexing with a fun (or maybe scary) dataset. Download the `restaurants.zip` file from the Assignment page on Courseworks, extract the `.csv` file, and read it into R with `read.csv()`. Assign the data frame to an object called `rest`, or something else you like that's both informative and easy/short to type. The dataset contains results from NYC restaurant inspections from 2017-2019 from the Department of Health and Mental Hygiene. Each row is a health code violation, or a report of no violation.
+
+```{r}
+setwd("C:/Users/lgptp/Documents/LJDS/Assignments")
+restaurants = read.csv("restaurants.csv")
+
+rest = data.frame(restaurants)
+```
+
+Run the code chunk below. **After you've seen the output, place the the entire statement inside the `head()` function.** Doing this will show only the first few elements, and will stop RStudio from printing 400,000 lines when you knit your PDF :)
+
+```{r}
+head(rest$BORO == 'Manhattan')
+```
+
+**Describe the output from the command above (without the `head` function). How long is the vector and why does it have that length? Why are some values `TRUE` and some `FALSE`?**
+
+the vector is 398811 rows long because ?. The values that come up as 'TRUE' are restaurants in the borough of Manhattan, while those that come up as 'FALSE' are outside Manhattan.
+
+
+
+Recall that R treats the logical `TRUE` as 1 and `FALSE` as 0, so we can use them to get counts and proportions of our data. In the chunk below, write code to count **how many** observations (rows) are from the borough Manhattan. What is the **proportion** of the dataset containing rows from the borough Queens? See the R code from Lab 3 if you need a refresher.
+
+```{r}
+# Number of rows from Manhattan = 157071
+Manhattan = rest[rest$BORO == 'Manhattan',]
+# Proportion of rows from Queens = 0.23
+mean(rest$BORO == 'Queens')
+```
+
+The function `is.na()` is incredibly useful because it allows us to probe the dataset for missing values. **Use `is.na()` to count how many rows in the `VIOLATION.CODE` column contain `NA`.** Then, inspect the dataset in RStudio by clicking its name in the environment, or running `View(rest)` (or whatever you named the dataframe object).
+
+```{r}
+# Count how many observations have VIOLATION.CODE as NA
+head(is.na(rest$VIOLATION.CODE))
+```
+
+**Does this result surprise you? Why or why not?** Clearly, some of these entries are empty, which may cause issues in analysis later. They should really be filled with `NA`. Let's get a sense of the scale of the problem by using a logical statement to **count how many rows** in the `VIOLATION.CODE` column are empty strings 
+```{r}
+# Count how many rows have VIOLATION.CODE as NA = 0
+ViolationCode = rest[rest$VIOLATION.CODE == 'NA',]
+```
+
+```{r}
+# Count how many VIOLATION.CODE are empty strings '' = 5936
+ViolationCode = rest[rest$VIOLATION.CODE == '',]
+```
+
+That result probably makes more sense. Below, **replace the entries of `VIOLATION.CODE` that have empty strings with `NA`**. Note that you just want to replace values in this column, not the whole data frame! **Verify that your replacement worked by counting again how many entries of `VIOLATION.CODE` are `NA`.**
+
+```{r}
+# Set the VIOLATION.CODE column to NA where the value is an empty string
+ViolationCode[ViolationCode == ""] <- NA 
+
+# Verify that worked by counting again how many VIOLATION.CODE have NA
+ViolationCode = rest[rest$VIOLATION.CODE == 'NA',]
+```
+
+Let's get a little more practice with some increasingly sophisticated logical indexing. Under each comment in the code chunk below, use the square brackets `[]` to return a dataframe containing the rows and columns I ask for in the comment. I'll leave the first one as an example. Store the data subset into a variable for each, so you don't print a million lines when you knit the markdown file. See the `logical_operators.png` cheat sheet attached to the Assignment page if you get stuck.
+
+```{r}
+# Get all rows where BORO is 'Manhattan'
+man_only = rest[rest$BORO == 'Manhattan',]
+
+# Get all rows where BORO is 'Brooklyn' and GRADE is 'A'
+Broo_a = rest[rest$BORO =='Brooklyn' & rest$GRADE == 'A',]
+
+# Get all rows where CUISINE.DESCRIPTION is either 'Pizza' or 'Sandwiches'
+Cui_des = rest[rest$CUISINE.DESCRIPTION == 'Pizza' | rest$CUISINE.DESCRIPTION == 'Sandwiches',]
+
+# Get all rows where SCORE is between 7 and 20
+Score_new = rest[rest$SCORE >= 7 & rest$SCORE <= 20,]
+
+# Get all rows where CUISINE.DESCRIPTION is 'Donuts' and BORO is 'Manhattan'
+Cui_donut = rest[rest$BORO =='Manhattan' & rest$CUISINE.DESCRIPTION == 'Donuts',]
+#    and get only columns 'DBA', 'BORO', 'CUISINE.DESCRIPTION', and 'GRADE'
+Cui_donut = rest[rest$BORO =='Manhattan' & rest$CUISINE.DESCRIPTION == 'Donuts', 
+                 c('DBA', 'BORO', 'CUISINE.DESCRIPTION', 'GRADE')]
+
+```
+
+Based on that last one, **does anyone seem to have a donut monopoly in Manhattan?**
+```{r}
+### It looks as though Dunkin Donuts has a monopoly in Manhattan
+```
+
+When you combine regular expressions with logical indexing, you wield truly great power over data sets. **Use the regular expression function that returns a logical vector, `grepl()`, to subset the dataframe, keeping the rows with the name of your favorite NY restaurant** (or any restaurant; restaurant names are stored in the `DBA` column ("doing business as"))
+
+```{r}
+# Make a new data frame, like above, only containing your favorite restaurant
+Max = rest[rest$BORO =='Manhattan' & rest$GRADE == 'A', c('BORO', 
+'CUISINE.DESCRIPTION', 'GRADE', 'CRITICAL.FLAG', 'VIOLATION.DESCRIPTION')]
+grepl('A', Max)
+```
+
+If you found it, you may find multiple rows in your new data frame. The rows in this data set are violations, so a single inspection may result in multiple violations, at multiple different dates. Overall, **how did your restaurant fare?** A qualitative description is perfectly fine. (Hope I didn't ruin anyone's day...)
+
+I think Max Brenner fared okay. It could have gotten a better number when it comes to violations, but that's alright. I was expecting the output to come back with more violations due to a bad personal experience, so, while I still wouldn't recommend this place, it does alright.
+
+
+## Part 2: Optional Challenges
+
+NA
+
+## Part 3: Your feedback on this assignment
+
+**On a scale of 1-5, with 1 being “too easy”, 5 being “too hard”, and 3 being “a good level”, how difficult was this assignment?**
+This assignment was a solid 4. Not too bad, although there were some wording confusion for me personally.
+
+**Approximately how much time did you spend working on this assignment? (i.e. actively solving the problem, not exploring the data independently)**
+2 hours 
+
+**Any thoughts on what you found useful, or what you found mundane, or confusing? (anything, big or small)**
+I think this whole assignment was pretty useful since now I know how to pick out the rows or columns that I want to focus on, which is great. 
